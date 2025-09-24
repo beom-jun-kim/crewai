@@ -2,45 +2,64 @@ import dotenv
 
 dotenv.load_dotenv()
 
-from crewai import Agent, Task, Crew
+from crewai import Crew, Agent, Task
 from crewai.project import CrewBase, agent, task, crew
-from tools import counter_tool
+from tools import search_tool, scrape_tool
+
 
 @CrewBase
 class NewsReaderAgent:
+
     @agent
-    def news_reader(self):
+    def news_hunter_agent(self):
         return Agent(
-            config=self.agents_config["news_reader"]
+            config=self.agents_config["news_hunter_agent"],
+            tools=[search_tool, scrape_tool],
         )
 
     @agent
-    def counter_agent(self):
+    def summarizer_agent(self):
         return Agent(
-            config=self.agents_config["counter_agent"],
-            tools=[counter_tool]
+            config=self.agents_config["summarizer_agent"],
+            tools=[
+                scrape_tool,
+            ],
+        )
+
+    @agent
+    def curator_agent(self):
+        return Agent(
+            config=self.agents_config["curator_agent"],
         )
 
     @task
-    def read_news(self):
+    def content_harvesting_task(self):
         return Task(
-            config=self.tasks_config["read_news"]
+            config=self.tasks_config["content_harvesting_task"],
         )
 
     @task
-    def counter_task(self):
+    def summarization_task(self):
         return Task(
-            config=self.tasks_config["counter_task"]
+            config=self.tasks_config["summarization_task"],
+        )
+
+    @task
+    def final_report_assembly_task(self):
+        return Task(
+            config=self.tasks_config["final_report_assembly_task"],
         )
 
     @crew
-    def news_reader_crew(self):
+    def crew(self):
         return Crew(
-            agents=self.agents,
             tasks=self.tasks,
+            agents=self.agents,
             verbose=True,
         )
 
-NewsReaderAgent().news_reader_crew().kickoff(
-    inputs={"sentence":"지난 10년간의 데이터를 분석"}
-)
+
+result = NewsReaderAgent().crew().kickoff(inputs={"topic": "Cambodia Thailand War."})
+
+for task_output in result.tasks_output:
+    print(task_output)
